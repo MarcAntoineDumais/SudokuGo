@@ -15,6 +15,7 @@ func main() {
     }
 
     g := loadGrid(os.Args[1])
+    fmt.Println(g.String())
     g.solve()
     fmt.Println(g.String())
 }
@@ -35,6 +36,9 @@ func loadGrid(filename string) grid {
     check(err)
     s := string(file)
     lines := strings.Split(s, "\n")
+    for i := range lines {
+        lines[i] = strings.TrimSpace(lines[i])
+    }
     n, _ := strconv.Atoi(lines[0])
     lines = lines[2:]
 
@@ -65,7 +69,6 @@ func loadGrid(filename string) grid {
         }
         realRow++
     }
-
     return grid{uint8(n), g}
 }
 
@@ -75,8 +78,15 @@ func (gr *grid) solve() {
 
 func (gr *grid) String() string {
     s := fmt.Sprintf("Sudoku of size %d\n", gr.n)
+    digitSize := 1
+    if gr.n > 3 {
+        digitSize = 2
+    }
     for i, row := range gr.g {
         for j, v := range row {
+            if gr.n>3 && v <= 9 {
+                s += " "
+            }
             s += fmt.Sprintf("%d ", v)
             if j%int(gr.n) == int(gr.n-1) && j != len(row)-1 {
                 s += "| "
@@ -84,7 +94,7 @@ func (gr *grid) String() string {
         }
         if i%int(gr.n) == int(gr.n-1) && i != len(gr.g)-1 {
             s += "\n"
-            for j := 0; j < int((gr.n*gr.n+gr.n-1)*2-1); j++ {
+            for j := 0; j < int(gr.n*gr.n)*(digitSize+1) + (int(gr.n)-1)*2 - 1; j++ {
                 s += "-"
             }
         }

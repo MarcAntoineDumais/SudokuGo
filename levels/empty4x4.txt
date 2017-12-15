@@ -1,0 +1,23 @@
+4 
+
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+-----------------------------------------------------
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+-----------------------------------------------------
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+-----------------------------------------------------
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+ x  x  x  x |  x  x  x  x |  x  x  x  x |  x  x  x  x 
+
+(4x4 Sudoku puzzle from www.menneske.no/sudoku/4/eng/)

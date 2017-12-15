@@ -1,0 +1,33 @@
+5
+
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+----------------------------------------------------------------------------------
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+----------------------------------------------------------------------------------
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+----------------------------------------------------------------------------------
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+----------------------------------------------------------------------------------
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+ x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x |  x  x  x  x  x 
+
+(Sudoku puzzle from http://sudoku-puzzles.merschat.com/)

@@ -6,6 +6,7 @@ import (
     "os"
     "strconv"
     "strings"
+    "time"
 )
 
 func main() {
@@ -24,6 +25,11 @@ func check(e error) {
     if e != nil {
         panic(e)
     }
+}
+
+func timeTrack(start time.Time, name string) {
+    elapsed := time.Since(start)
+    fmt.Printf("%s took %s\n", name, elapsed)
 }
 
 type grid struct {
@@ -73,7 +79,9 @@ func loadGrid(filename string) grid {
 }
 
 func (gr *grid) solve() {
+    defer timeTrack(time.Now(), "Solver")
 
+    //Solve the sudoku
 }
 
 func (gr *grid) String() string {

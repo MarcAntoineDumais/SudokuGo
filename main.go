@@ -166,7 +166,7 @@ func (gr *grid) solve() bool {
                         avail[k][j] &= ^mask
 
                         blockY := blockI/gr.n * gr.n + k/gr.n
-                        blockX := blockI%gr.n * gr.n + j%gr.n
+                        blockX := blockI%gr.n * gr.n + k%gr.n
                         avail[blockY][blockX] &= ^mask
                     }
 
@@ -214,7 +214,7 @@ func backupAvail(avail [][]uint64, i, j, n int) (row, col, block []uint64) {
         row[k] = avail[i][k]
         col[k] = avail[k][j]
         blockI := i/n * n + j/n
-        block[k] = avail[blockI/n * n + k/n][blockI%n * n + j%n]
+        block[k] = avail[blockI/n * n + k/n][blockI%n * n + k%n]
     }
     return
 }
@@ -222,16 +222,16 @@ func backupAvail(avail [][]uint64, i, j, n int) (row, col, block []uint64) {
 func restoreAvail(avail [][]uint64, row, col, block []uint64, i, j, n int) {
     for k := range avail {
         if k != j {
-            avail[i][k] &= row[k]
+            avail[i][k] = row[k]
         }
 
         if k != i {
-            avail[k][j] &= col[k]
+            avail[k][j] = col[k]
         }
 
         blockI := i/n * n + j/n
         blockY := blockI/n * n + k/n
-        blockX := blockI%n * n + j%n
+        blockX := blockI%n * n + k%n
         if blockY != i || blockX != j {
             avail[blockY][blockX] = block[k]
         }

@@ -36,7 +36,7 @@ func timeTrack(start time.Time, name string) {
 }
 
 type grid struct {
-    n int
+    n, n2 int
     g [][]int
     choices [][]uint64
     actions []action
@@ -64,7 +64,7 @@ func (gr *grid) apply(a *action) {
 
     mask := uint64(1 << uint(a.val - 1))
     gr.g[a.y][a.x] = a.val
-    for k := 0; k < gr.n*gr.n; k++ {
+    for k := 0; k < gr.n2; k++ {
         gr.choices[a.y][k] &= ^mask
         gr.choices[k][a.x] &= ^mask
 
@@ -116,7 +116,7 @@ func (gr *grid) nakedSingle() (changes bool) {
     for i := range gr.g {
         for j := range gr.g[i] {
             if gr.g[i][j] == 0 {
-                count, v := countBinaryDigits(gr.choices[i][j], gr.n)
+                count, v := countBinaryDigits(gr.choices[i][j], gr.n2)
                 if count == 1 {
                     a := action{x:j, y:i, val:v, logic:true}
                     gr.apply(&a)
@@ -134,6 +134,58 @@ func (gr *grid) nakedSingle() (changes bool) {
 
 func (gr *grid) hiddenSingle() (changes bool) {
     changes = false
+    for i := 0; i < gr.n2; i++ {
+        rowCounts := make([]int, gr.n2)
+        rowIndices := make([]int, gr.n2)
+        colCounts := make([]int, gr.n2)
+        colIndices := make([]int, gr.n2)
+        blockCounts := make([]int, gr.n2)
+        blockIndices := make([]int, gr.n2)
+
+        for j := 0; j < gr.n2; j++ {
+            for k := 0; k < gr.n2; k++ {
+                mask = 1 << uint(k)
+                if gr.g[i][j] == 0 && (gr.choices[i][j] & mask) != 0 {
+                    rowCounts[k]++
+                    rowIndices[k] = j
+                }
+
+                if gr.g[j][i] == 0 && (gr.choices[j][i] & mask) != 0 {
+                    colCounts[k]++
+                    colIndices[k] = j
+                }
+
+                blockY := i/gr.n * gr.n + j/gr.n
+                blockX := i%gr.n * gr.n + j%gr.n
+
+                if gr.g[blockY][blockX] == 0 && (gr.choices[blockY][blockX] & mask) != 0 {
+                    blockCounts[k]++
+                    blockIndices[k] = j
+                }
+            }
+        }
+
+        for j := 0; j < gr.n2; j++ {
+            if rowCounts[j] == 1 && gr.g[i][rowIndices[j]] == 0 {
+                a := action{x:rowIndices[j], y:i, val:j+1, logic:true}
+                gr.apply(&a)
+                changes = true
+            }
+            if colCounts[j] == 1 && gr.g[colIndices[j]][i] == 0 {
+                a := action{x:i, y:colIndices[j], val:j+1, logic:true}
+                gr.apply(&a)
+                changes = true
+            }
+            if colCounts[j] == 1{
+                //get block coordinates and fix below
+                if gr.g[colIndices[j]][i] == 0 {
+                    a := action{x:i, y:colIndices[j], val:j+1, logic:true}
+                    gr.apply(&a)
+                    changes = true
+                }
+            }
+        }
+    }
     return
 }
 
@@ -209,10 +261,10 @@ func (gr *grid) solve() bool {
     return recurse(0, 0)
 }
 
-func countBinaryDigits(k uint64, n int) (count, val int) {
+func countBinaryDigits(k uint64, n2 int) (count, val int) {
     val = 0
     count = 0
-    for i := 0; i < n*n; i++ {
+    for i := 0; i < n2; i++ {
         if k & uint64(1 << uint(i)) != 0 {
             count++
             val = i+1
@@ -258,7 +310,7 @@ func loadGrid(filename string) grid {
         }
         realRow++
     }
-    return grid{n, g, nil, nil}
+    return grid{n, n*n, g, nil, nil}
 }
 
 func (gr *grid) String() string {

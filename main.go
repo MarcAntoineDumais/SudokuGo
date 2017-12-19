@@ -48,19 +48,19 @@ type action struct {
     row, col, block []uint64
 }
 
-func (gr *grid) apply(a action) {
+func (gr *grid) apply(a *action) {
     a.row = make([]uint64, gr.n*gr.n)
     a.col = make([]uint64, gr.n*gr.n)
     a.block = make([]uint64, gr.n*gr.n)
     blockI := a.y/gr.n * gr.n + a.x/gr.n
-    
+
     for k := range gr.choices {
         a.row[k] = gr.choices[a.y][k]
         a.col[k] = gr.choices[k][a.x]
         blockI := a.y/gr.n * gr.n + a.x/gr.n
         a.block[k] = gr.choices[blockI/gr.n * gr.n + k/gr.n][blockI%gr.n * gr.n + k%gr.n]
     }
-    
+
     mask := uint64(1 << uint(a.val - 1))
     gr.g[a.y][a.x] = a.val
     for k := 0; k < gr.n*gr.n; k++ {
@@ -71,14 +71,18 @@ func (gr *grid) apply(a action) {
         blockX := blockI%gr.n * gr.n + k%gr.n
         gr.choices[blockY][blockX] &= ^mask
     }
+    //fmt.Println(gr.String())
+    //var r string
+    //fmt.Println("Did ", a)
+    //fmt.Scanln(&r)
 }
 
-func (gr *grid) undo(a action) {
+func (gr *grid) undo(a *action) {
     gr.g[a.y][a.x] = 0
     blockI := a.y/gr.n * gr.n + a.x/gr.n
-    
+
     for k := range gr.choices {
-        if k != a.y {
+        if k != a.x {
             gr.choices[a.y][k] = a.row[k]
         }
 
@@ -92,14 +96,18 @@ func (gr *grid) undo(a action) {
             gr.choices[blockY][blockX] = a.block[k]
         }
     }
+    //fmt.Println(gr.String())
+    //var r string
+    //fmt.Println("Undid ", a)
+    //fmt.Scanln(&r)
 }
 
 //Solve the sudoku
 func (gr *grid) solve() bool {
     defer timeTrack(time.Now(), "Solver")
-    
+
     var actions []action
-    
+
     gr.choices = make([][]uint64, gr.n*gr.n)
     for i := range gr.g {
         gr.choices[i] = make([]uint64, gr.n*gr.n)
@@ -148,13 +156,13 @@ func (gr *grid) solve() bool {
                        continue
                     }
                     a := action{x:j, y:i, val:v+1, logic:false}
-                    gr.apply(a)
+                    gr.apply(&a)
                     actions = append(actions, a)
 
                     if recurse(i, j+1) {
                         return true
                     } else {
-                        gr.undo(actions[len(actions)-1])
+                        gr.undo(&actions[len(actions)-1])
                         actions = actions[:len(actions)-1]
                     }
                 }

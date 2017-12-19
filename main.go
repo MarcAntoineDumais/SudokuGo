@@ -39,6 +39,7 @@ type grid struct {
     n int
     g [][]int
     choices [][]uint64
+    actions []action
 }
 
 type action struct {
@@ -71,42 +72,74 @@ func (gr *grid) apply(a *action) {
         blockX := blockI%gr.n * gr.n + k%gr.n
         gr.choices[blockY][blockX] &= ^mask
     }
+
+    gr.actions = append(gr.actions, *a)
     //fmt.Println(gr.String())
     //var r string
     //fmt.Println("Did ", a)
     //fmt.Scanln(&r)
 }
 
-func (gr *grid) undo(a *action) {
+func (gr *grid) undo() bool {
+    a := gr.actions[len(gr.actions)-1]
     gr.g[a.y][a.x] = 0
     blockI := a.y/gr.n * gr.n + a.x/gr.n
 
     for k := range gr.choices {
-        if k != a.x {
+        if a.logic || k != a.x {
             gr.choices[a.y][k] = a.row[k]
         }
 
-        if k != a.y {
+        if a.logic || k != a.y {
             gr.choices[k][a.x] = a.col[k]
         }
 
         blockY := blockI/gr.n * gr.n + k/gr.n
         blockX := blockI%gr.n * gr.n + k%gr.n
-        if blockY != a.y || blockX != a.x {
+        if a.logic || blockY != a.y || blockX != a.x {
             gr.choices[blockY][blockX] = a.block[k]
         }
     }
+
+    gr.actions = gr.actions[:len(gr.actions)-1]
+    //fmt.Println(gr.String())
+    //fmt.Println("undo ", a)
+    return a.logic
     //fmt.Println(gr.String())
     //var r string
     //fmt.Println("Undid ", a)
     //fmt.Scanln(&r)
 }
 
+func (gr *grid) nakedSingle() (changes bool) {
+    changes = false
+    for i := range gr.g {
+        for j := range gr.g[i] {
+            if gr.g[i][j] == 0 {
+                count, v := countBinaryDigits(gr.choices[i][j], gr.n)
+                if count == 1 {
+                    a := action{x:j, y:i, val:v, logic:true}
+                    gr.apply(&a)
+                    changes = true
+                    //fmt.Println(gr.String())
+                    //var r string
+                    //fmt.Println("naked single ", a)
+                    //fmt.Scanln(&r)
+                }
+            }
+        }
+    }
+    return
+}
+
+func (gr *grid) hiddenSingle() (changes bool) {
+    changes = false
+    return
+}
+
 //Solve the sudoku
 func (gr *grid) solve() bool {
     defer timeTrack(time.Now(), "Solver")
-
-    var actions []action
 
     gr.choices = make([][]uint64, gr.n*gr.n)
     for i := range gr.g {
@@ -157,13 +190,12 @@ func (gr *grid) solve() bool {
                     }
                     a := action{x:j, y:i, val:v+1, logic:false}
                     gr.apply(&a)
-                    actions = append(actions, a)
+                    for gr.nakedSingle() || gr.hiddenSingle(){}
 
                     if recurse(i, j+1) {
                         return true
                     } else {
-                        gr.undo(&actions[len(actions)-1])
-                        actions = actions[:len(actions)-1]
+                        for len(gr.actions) > 0 && gr.undo(){}
                     }
                 }
                 gr.choices[i][j] = curChoices
@@ -175,6 +207,18 @@ func (gr *grid) solve() bool {
     }
 
     return recurse(0, 0)
+}
+
+func countBinaryDigits(k uint64, n int) (count, val int) {
+    val = 0
+    count = 0
+    for i := 0; i < n*n; i++ {
+        if k & uint64(1 << uint(i)) != 0 {
+            count++
+            val = i+1
+        }
+    }
+    return
 }
 
 func loadGrid(filename string) grid {
@@ -214,7 +258,7 @@ func loadGrid(filename string) grid {
         }
         realRow++
     }
-    return grid{n, g, nil}
+    return grid{n, g, nil, nil}
 }
 
 func (gr *grid) String() string {

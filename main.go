@@ -38,6 +38,135 @@ func timeTrack(start time.Time, name string) {
 type grid struct {
     n int
     g [][]int
+    choices [][]uint64
+}
+
+type action struct {
+    x, y int
+    val int
+    logic bool
+    row, col, block []uint64
+}
+
+func (gr *grid) apply(a action) {
+    a.row = make([]uint64, gr.n*gr.n)
+    a.col = make([]uint64, gr.n*gr.n)
+    a.block = make([]uint64, gr.n*gr.n)
+    blockI := a.y/gr.n * gr.n + a.x/gr.n
+    
+    for k := range gr.choices {
+        a.row[k] = gr.choices[a.y][k]
+        a.col[k] = gr.choices[k][a.x]
+        blockI := a.y/gr.n * gr.n + a.x/gr.n
+        a.block[k] = gr.choices[blockI/gr.n * gr.n + k/gr.n][blockI%gr.n * gr.n + k%gr.n]
+    }
+    
+    mask := uint64(1 << uint(a.val - 1))
+    gr.g[a.y][a.x] = a.val
+    for k := 0; k < gr.n*gr.n; k++ {
+        gr.choices[a.y][k] &= ^mask
+        gr.choices[k][a.x] &= ^mask
+
+        blockY := blockI/gr.n * gr.n + k/gr.n
+        blockX := blockI%gr.n * gr.n + k%gr.n
+        gr.choices[blockY][blockX] &= ^mask
+    }
+}
+
+func (gr *grid) undo(a action) {
+    gr.g[a.y][a.x] = 0
+    blockI := a.y/gr.n * gr.n + a.x/gr.n
+    
+    for k := range gr.choices {
+        if k != a.y {
+            gr.choices[a.y][k] = a.row[k]
+        }
+
+        if k != a.y {
+            gr.choices[k][a.x] = a.col[k]
+        }
+
+        blockY := blockI/gr.n * gr.n + k/gr.n
+        blockX := blockI%gr.n * gr.n + k%gr.n
+        if blockY != a.y || blockX != a.x {
+            gr.choices[blockY][blockX] = a.block[k]
+        }
+    }
+}
+
+//Solve the sudoku
+func (gr *grid) solve() bool {
+    defer timeTrack(time.Now(), "Solver")
+    
+    var actions []action
+    
+    gr.choices = make([][]uint64, gr.n*gr.n)
+    for i := range gr.g {
+        gr.choices[i] = make([]uint64, gr.n*gr.n)
+        for j := range gr.choices[i] {
+            for k := 0; k < gr.n*gr.n; k++ {
+                gr.choices[i][j] |= 1 << uint(k)
+            }
+        }
+    }
+
+    for i := range gr.g {
+        for j, val := range gr.g[i] {
+            if val != 0 {
+                blockI := i/gr.n * gr.n + j/gr.n
+                for k := range gr.g {
+                    if k != j {
+                        gr.choices[i][k] &= ^(1 << uint(val - 1))
+                    }
+
+                    if k != i {
+                        gr.choices[k][j] &= ^(1 << uint(val - 1))
+                    }
+
+                    blockY := blockI/gr.n * gr.n + k/gr.n
+                    blockX := blockI%gr.n * gr.n + k%gr.n
+                    if blockY != i || blockX != j {
+                        gr.choices[blockY][blockX] &= ^(1 << uint(val - 1))
+                    }
+                }
+            }
+        }
+    }
+
+    var recurse func(i, j int) bool
+    recurse = func(i, j int) bool {
+        for ; i < len(gr.g); i++ {
+            for ; j < len(gr.g[i]); j++ {
+                curChoices := gr.choices[i][j]
+
+                if gr.g[i][j] != 0 {
+                    continue
+                }
+                for v := 0; v < gr.n*gr.n; v++ {
+                    mask := uint64(1 << uint(v))
+                    if (gr.choices[i][j] & mask) == 0 {
+                       continue
+                    }
+                    a := action{x:j, y:i, val:v+1, logic:false}
+                    gr.apply(a)
+                    actions = append(actions, a)
+
+                    if recurse(i, j+1) {
+                        return true
+                    } else {
+                        gr.undo(actions[len(actions)-1])
+                        actions = actions[:len(actions)-1]
+                    }
+                }
+                gr.choices[i][j] = curChoices
+                return false
+            }
+            j = 0
+        }
+        return true
+    }
+
+    return recurse(0, 0)
 }
 
 func loadGrid(filename string) grid {
@@ -77,165 +206,7 @@ func loadGrid(filename string) grid {
         }
         realRow++
     }
-    return grid{n, g}
-}
-
-func (gr *grid) solve() bool {
-    defer timeTrack(time.Now(), "Solver")
-
-    //Solve the sudoku
-    rows := make([]uint64, gr.n*gr.n)
-    columns := make([]uint64, gr.n*gr.n)
-    blocks := make([]uint64, gr.n*gr.n)
-
-    avail := make([][]uint64, gr.n*gr.n)
-    for i := range gr.g {
-        avail[i] = make([]uint64, gr.n*gr.n)
-        for j := range avail[i] {
-            for k := 0; k < gr.n*gr.n; k++ {
-                avail[i][j] |= 1 << uint(k)
-            }
-        }
-    }
-
-    for i := range gr.g {
-        for j, val := range gr.g[i] {
-            if val != 0 {
-                blockI := i/gr.n * gr.n + j/gr.n
-                for k := range gr.g {
-                    if k != j {
-                        avail[i][k] &= ^(1 << uint(val - 1))
-                    }
-
-                    if k != i {
-                        avail[k][j] &= ^(1 << uint(val - 1))
-                    }
-
-                    blockY := blockI/gr.n * gr.n + k/gr.n
-                    blockX := blockI%gr.n * gr.n + k%gr.n
-                    if blockY != i || blockX != j {
-                        avail[blockY][blockX] &= ^(1 << uint(val - 1))
-                    }
-                }
-            }
-        }
-    }
-
-    for i := range gr.g {
-        for j := range gr.g[i] {
-            val := gr.g[i][j]
-            if val != 0 {
-                rows[i] |= 1 << uint(val-1)
-                columns[j] |= 1 << uint(val-1)
-                blocks[i/gr.n * gr.n + j/gr.n] |= 1 << uint(val-1)
-            }
-        }
-    }
-
-    var recurse func(i, j int) bool
-    recurse = func(i, j int) bool {
-        //fmt.Println(i, j)
-        for ; i < len(gr.g); i++ {
-            for ; j < len(gr.g[i]); j++ {
-                blockI := i/gr.n * gr.n + j/gr.n
-                curRow := rows[i]
-                curCol := columns[j]
-                curBlock := blocks[blockI]
-
-                curAvail := avail[i][j]
-                availRow, availCol, availBlock := backupAvail(avail, i, j, gr.n)
-
-                if gr.g[i][j] != 0 {
-                    continue
-                }
-                for v := 0; v < gr.n*gr.n; v++ {
-                    mask := uint64(1 << uint(v))
-                    if (avail[i][j] & mask) == 0 ||
-                       (curRow & mask) != 0 ||
-                       (curCol & mask) != 0 ||
-                       (curBlock & mask) != 0 {
-                       continue
-                    }
-                    //fmt.Println("v ", v)
-                    gr.g[i][j] = v + 1
-                    rows[i] |= mask
-                    columns[j] |= mask
-                    blocks[blockI] |= mask
-                    for k := 0; k < gr.n*gr.n; k++ {
-                        avail[i][k] &= ^mask
-                        avail[k][j] &= ^mask
-
-                        blockY := blockI/gr.n * gr.n + k/gr.n
-                        blockX := blockI%gr.n * gr.n + k%gr.n
-                        avail[blockY][blockX] &= ^mask
-                    }
-
-                    if recurse(i, j+1) {
-                        return true
-                    } else {
-                        rows[i] = curRow
-                        columns[j] = curCol
-                        blocks[blockI] = curBlock
-                        gr.g[i][j] = 0
-                        restoreAvail(avail, availRow, availCol, availBlock, i, j, gr.n)
-                    }
-                }
-                avail[i][j] = curAvail
-                return false
-            }
-            j = 0
-        }
-        return true
-    }
-
-    return recurse(0, 0)
-
-    /*fmt.Println("rows")
-    for i, k := range rows {
-        fmt.Printf("%d: %s\n", i, strconv.FormatInt(int64(k), 2))
-    }
-    fmt.Println("columns")
-    for i, k := range columns {
-        fmt.Printf("%d: %s\n", i, strconv.FormatInt(int64(k), 2))
-    }
-    fmt.Println("blocks")
-    for i, k := range blocks {
-        fmt.Printf("%d: %s\n", i, strconv.FormatInt(int64(k), 2))
-    }
-    */
-}
-
-func backupAvail(avail [][]uint64, i, j, n int) (row, col, block []uint64) {
-    row = make([]uint64, n*n)
-    col = make([]uint64, n*n)
-    block = make([]uint64, n*n)
-
-    for k := range avail {
-        row[k] = avail[i][k]
-        col[k] = avail[k][j]
-        blockI := i/n * n + j/n
-        block[k] = avail[blockI/n * n + k/n][blockI%n * n + k%n]
-    }
-    return
-}
-
-func restoreAvail(avail [][]uint64, row, col, block []uint64, i, j, n int) {
-    for k := range avail {
-        if k != j {
-            avail[i][k] = row[k]
-        }
-
-        if k != i {
-            avail[k][j] = col[k]
-        }
-
-        blockI := i/n * n + j/n
-        blockY := blockI/n * n + k/n
-        blockX := blockI%n * n + k%n
-        if blockY != i || blockX != j {
-            avail[blockY][blockX] = block[k]
-        }
-    }
+    return grid{n, g, nil}
 }
 
 func (gr *grid) String() string {

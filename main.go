@@ -74,10 +74,6 @@ func (gr *grid) apply(a *action) {
     }
 
     gr.actions = append(gr.actions, *a)
-    //fmt.Println(gr.String())
-    //var r string
-    //fmt.Println("Did ", a)
-    //fmt.Scanln(&r)
 }
 
 func (gr *grid) undo() bool {
@@ -102,17 +98,10 @@ func (gr *grid) undo() bool {
     }
 
     gr.actions = gr.actions[:len(gr.actions)-1]
-    //fmt.Println(gr.String())
-    //fmt.Println("undo ", a)
     return a.logic
-    //fmt.Println(gr.String())
-    //var r string
-    //fmt.Println("Undid ", a)
-    //fmt.Scanln(&r)
 }
 
-func (gr *grid) nakedSingle() (changes bool) {
-    changes = false
+func (gr *grid) nakedSingle() bool {
     for i := range gr.g {
         for j := range gr.g[i] {
             if gr.g[i][j] == 0 {
@@ -120,20 +109,15 @@ func (gr *grid) nakedSingle() (changes bool) {
                 if count == 1 {
                     a := action{x:j, y:i, val:v, logic:true}
                     gr.apply(&a)
-                    changes = true
-                    //fmt.Println(gr.String())
-                    //var r string
-                    //fmt.Println("naked single ", a)
-                    //fmt.Scanln(&r)
+                    return true
                 }
             }
         }
     }
-    return
+    return false
 }
 
-func (gr *grid) hiddenSingle() (changes bool) {
-    changes = false
+func (gr *grid) hiddenSingle() bool {
     for i := 0; i < gr.n2; i++ {
         rowCounts := make([]int, gr.n2)
         rowIndices := make([]int, gr.n2)
@@ -144,7 +128,7 @@ func (gr *grid) hiddenSingle() (changes bool) {
 
         for j := 0; j < gr.n2; j++ {
             for k := 0; k < gr.n2; k++ {
-                mask = 1 << uint(k)
+                mask := uint64(1 << uint(k))
                 if gr.g[i][j] == 0 && (gr.choices[i][j] & mask) != 0 {
                     rowCounts[k]++
                     rowIndices[k] = j
@@ -169,37 +153,83 @@ func (gr *grid) hiddenSingle() (changes bool) {
             if rowCounts[j] == 1 && gr.g[i][rowIndices[j]] == 0 {
                 a := action{x:rowIndices[j], y:i, val:j+1, logic:true}
                 gr.apply(&a)
-                changes = true
+                return true
             }
             if colCounts[j] == 1 && gr.g[colIndices[j]][i] == 0 {
                 a := action{x:i, y:colIndices[j], val:j+1, logic:true}
                 gr.apply(&a)
-                changes = true
+                return true
             }
-            if colCounts[j] == 1{
-                //get block coordinates and fix below
-                if gr.g[colIndices[j]][i] == 0 {
-                    a := action{x:i, y:colIndices[j], val:j+1, logic:true}
+            if blockCounts[j] == 1 {
+                blockY := i/gr.n * gr.n + blockIndices[j]/gr.n
+                blockX := i%gr.n * gr.n + blockIndices[j]%gr.n
+                if gr.g[blockY][blockX] == 0 {
+                    a := action{x:blockX, y:blockY, val:j+1, logic:true}
                     gr.apply(&a)
-                    changes = true
+                    return true
                 }
             }
         }
     }
-    return
+    return false
+}
+
+func (gr *grid) areGroupsSatisfiable() bool {
+	full := uint64(1);
+	for i := 0; i < gr.n2-1; i++ {
+		full = full << 1;
+		full++;
+	}
+	var row, col, block uint64
+    var blockX, blockY int
+	for i := 0; i < gr.n2; i++ {
+		row = 0;
+		col = 0;
+		block = 0;
+		for j := 0; j < gr.n2; j++ {
+			if gr.g[i][j] == 0 {
+				row |= gr.choices[i][j];
+			} else {
+				row |= uint64(1 << uint(gr.g[i][j] - 1));
+            }
+            
+			if gr.g[j][i] == 0 {
+				col |= gr.choices[j][i];
+			} else {
+				col |= uint64(1 << uint(gr.g[j][i] - 1));
+            }
+            
+            blockY = i/gr.n * gr.n + j/gr.n
+            blockX = i%gr.n * gr.n + j%gr.n
+			if gr.g[blockY][blockX] == 0 {
+				block |= gr.choices[blockY][blockX];
+			} else {
+				block |= uint64(1 << uint(gr.g[blockY][blockX] - 1));
+            }
+		}
+        
+		if row != full || col != full || block != full {
+			return false;
+        }
+	}
+	return true;
 }
 
 //Solve the sudoku
 func (gr *grid) solve() bool {
     defer timeTrack(time.Now(), "Solver")
 
-    gr.choices = make([][]uint64, gr.n*gr.n)
+    full := uint64(1);
+	for i := 0; i < gr.n2-1; i++ {
+		full = full << 1;
+		full++;
+	}
+    
+    gr.choices = make([][]uint64, gr.n2)
     for i := range gr.g {
-        gr.choices[i] = make([]uint64, gr.n*gr.n)
+        gr.choices[i] = make([]uint64, gr.n2)
         for j := range gr.choices[i] {
-            for k := 0; k < gr.n*gr.n; k++ {
-                gr.choices[i][j] |= 1 << uint(k)
-            }
+            gr.choices[i][j] = full
         }
     }
 
@@ -235,6 +265,11 @@ func (gr *grid) solve() bool {
                 if gr.g[i][j] != 0 {
                     continue
                 }
+                
+                if !gr.areGroupsSatisfiable() {
+                    return false
+                }
+                
                 for v := 0; v < gr.n*gr.n; v++ {
                     mask := uint64(1 << uint(v))
                     if (gr.choices[i][j] & mask) == 0 {
@@ -295,7 +330,7 @@ func loadGrid(filename string) grid {
             continue
         }
         realCol := 0
-        line := strings.Split(lines[i], " ")
+        line := strings.Fields(lines[i])
 
         for j := 0; j < n*n+(n-1); j++ {
             if j%(n+1) == n {
